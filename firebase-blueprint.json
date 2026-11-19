@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "TransportSheet": {
+      "title": "TransportSheet",
+      "description": "A live transport ledger workbook with customizable columns and optional spreadsheet sync link.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "name": { "type": "string", "description": "Workbook title." },
+        "category": { "type": "string", "enum": ["FREIGHT", "EXPENSE", "BILLING", "CUSTOM"] },
+        "syncPlugUrl": { "type": "string", "description": "Connected Excel or Google Sheet URL." },
+        "syncEnabled": { "type": "boolean", "description": "Whether external sheet sync metadata is active." },
+        "columns": { "type": "array", "description": "Ordered column headers (max 12)." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "name", "category", "syncPlugUrl", "syncEnabled", "columns", "createdAt", "updatedAt"]
+    },
+    "SheetRow": {
+      "title": "SheetRow",
+      "description": "A single ledger row belonging to a transport sheet.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "sheetId": { "type": "string", "description": "Parent sheet document ID." },
+        "dateStr": { "type": "string", "description": "Trip or bill date in YYYY-MM-DD." },
+        "vehicleNo": { "type": "string", "description": "Vehicle registration plate." },
+        "partyOrRoute": { "type": "string", "description": "Route or client party description." },
+        "billNo": { "type": "string", "description": "LR, bilty, or invoice number." },
+        "freightAmount": { "type": "number", "description": "Freight revenue amount." },
+        "expenseAmount": { "type": "number", "description": "Diesel, toll, or trip expense amount." },
+        "status": { "type": "string", "enum": ["PAID", "PENDING", "IN_TRANSIT", "BILLED"] },
+        "notes": { "type": "string", "description": "Humanized remarks or dispatch notes." },
+        "sourceLabel": { "type": "string", "description": "Entry origin label such as Manual Entry or Bill Scan." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "sheetId", "dateStr", "vehicleNo", "partyOrRoute", "billNo", "freightAmount", "expenseAmount", "status", "notes", "sourceLabel", "createdAt", "updatedAt"]
+    },
+    "GarageVehicle": {
+      "title": "GarageVehicle",
+      "description": "A fleet vehicle tracked in the garage with RTO info, 3D class, challans, RTC permit, and insurance dates.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "plateNumber": { "type": "string", "description": "Normalized vehicle registration plate." },
+        "vehicleClass": { "type": "string", "enum": ["LMV", "BIKE", "BUS", "TRUCK", "LONG_VEHICLE"] },
+        "nickname": { "type": "string", "description": "Make, model, or fleet name." },
+        "ownerName": { "type": "string", "description": "Registered owner name." },
+        "rtoOffice": { "type": "string", "description": "RTO office and state." },
+        "fuelType": { "type": "string", "description": "Fuel type." },
+        "chassisMasked": { "type": "string", "description": "Masked chassis or engine identifier." },
+        "challanCount": { "type": "integer", "description": "Number of pending challans." },
+        "challanAmount": { "type": "number", "description": "Total pending challan amount." },
+        "challanDueDate": { "type": "string", "description": "Challan due date YYYY-MM-DD." },
+        "rtcPermitExpiry": { "type": "string", "description": "RTC/RTO permit or fitness expiry YYYY-MM-DD." },
+        "insuranceProvider": { "type": "string", "description": "Insurer name and policy summary." },
+        "insurancePremium": { "type": "number", "description": "Annual insurance premium amount." },
+        "insuranceDueDate": { "type": "string", "description": "Insurance renewal date YYYY-MM-DD." },
+        "alertsEnabled": { "type": "boolean", "description": "Whether 3-day early reminders are active." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "plateNumber", "vehicleClass", "nickname", "ownerName", "rtoOffice", "fuelType", "chassisMasked", "challanCount", "challanAmount", "challanDueDate", "rtcPermitExpiry", "insuranceProvider", "insurancePremium", "insuranceDueDate", "alertsEnabled", "createdAt", "updatedAt"]
+    },
+    "BusinessDocument": {
+      "title": "BusinessDocument",
+      "description": "Metadata for created or edited invoices and official transport statements.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID." },
+        "title": { "type": "string", "description": "Document title." },
+        "docType": { "type": "string", "enum": ["FREIGHT_INVOICE", "OFFICIAL_STATEMENT", "POD_BILL"] },
+        "vehicleNo": { "type": "string", "description": "Associated vehicle number." },
+        "partyName": { "type": "string", "description": "Client or agency name." },
+        "amount": { "type": "number", "description": "Total bill or statement amount." },
+        "photoCount": { "type": "integer", "description": "Number of integrated photos inside the bill." },
+        "summaryNote": { "type": "string", "description": "Humanized summary note." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp on creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp on update." }
+      },
+      "required": ["userId", "title", "docType", "vehicleNo", "partyName", "amount", "photoCount", "summaryNote", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/sheets/{sheetId}": {
+      "schema": { "$ref": "#/entities/TransportSheet" },
+      "description": "User-owned transport Excel workbooks."
+    },
+    "/users/{userId}/sheets/{sheetId}/rows/{rowId}": {
+      "schema": { "$ref": "#/entities/SheetRow" },
+      "description": "Ledger rows inside a transport sheet."
+    },
+    "/users/{userId}/vehicles/{vehicleId}": {
+      "schema": { "$ref": "#/entities/GarageVehicle" },
+      "description": "Vehicles registered in the owner's garage watchlist."
+    },
+    "/users/{userId}/documents/{docId}": {
+      "schema": { "$ref": "#/entities/BusinessDocument" },
+      "description": "Saved invoice and official statement records."
+    }
+  }
+}

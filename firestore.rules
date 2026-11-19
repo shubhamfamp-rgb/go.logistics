@@ -1,0 +1,180 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidSheet(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.category in ['FREIGHT', 'EXPENSE', 'BILLING', 'CUSTOM'] &&
+             data.syncPlugUrl is string && data.syncPlugUrl.size() <= 300 &&
+             data.syncEnabled is bool &&
+             data.columns is list && data.columns.size() >= 1 && data.columns.size() <= 12 &&
+             data.columns[0] is string;
+    }
+
+    function isValidSheetRow(data, userId, sheetId) {
+      return data.userId is string && data.userId == userId &&
+             data.sheetId is string && data.sheetId == sheetId &&
+             data.dateStr is string && data.dateStr.size() <= 24 &&
+             data.vehicleNo is string && data.vehicleNo.size() <= 24 &&
+             data.partyOrRoute is string && data.partyOrRoute.size() >= 1 && data.partyOrRoute.size() <= 140 &&
+             data.billNo is string && data.billNo.size() <= 40 &&
+             data.freightAmount is number && data.freightAmount >= 0 && data.freightAmount <= 100000000 &&
+             data.expenseAmount is number && data.expenseAmount >= 0 && data.expenseAmount <= 100000000 &&
+             data.status in ['PAID', 'PENDING', 'IN_TRANSIT', 'BILLED'] &&
+             data.notes is string && data.notes.size() <= 300 &&
+             data.sourceLabel is string && data.sourceLabel.size() >= 1 && data.sourceLabel.size() <= 40;
+    }
+
+    function isValidVehicle(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.plateNumber is string && data.plateNumber.size() >= 4 && data.plateNumber.size() <= 20 &&
+             data.vehicleClass in ['LMV', 'BIKE', 'BUS', 'TRUCK', 'LONG_VEHICLE'] &&
+             data.nickname is string && data.nickname.size() <= 60 &&
+             data.ownerName is string && data.ownerName.size() <= 80 &&
+             data.rtoOffice is string && data.rtoOffice.size() <= 80 &&
+             data.fuelType is string && data.fuelType.size() <= 30 &&
+             data.chassisMasked is string && data.chassisMasked.size() <= 40 &&
+             data.challanCount is int && data.challanCount >= 0 && data.challanCount <= 1000 &&
+             data.challanAmount is number && data.challanAmount >= 0 && data.challanAmount <= 10000000 &&
+             data.challanDueDate is string && data.challanDueDate.size() <= 20 &&
+             data.rtcPermitExpiry is string && data.rtcPermitExpiry.size() <= 20 &&
+             data.insuranceProvider is string && data.insuranceProvider.size() <= 80 &&
+             data.insurancePremium is number && data.insurancePremium >= 0 && data.insurancePremium <= 10000000 &&
+             data.insuranceDueDate is string && data.insuranceDueDate.size() <= 20 &&
+             data.alertsEnabled is bool;
+    }
+
+    function isValidDocument(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.docType in ['FREIGHT_INVOICE', 'OFFICIAL_STATEMENT', 'POD_BILL'] &&
+             data.vehicleNo is string && data.vehicleNo.size() <= 24 &&
+             data.partyName is string && data.partyName.size() <= 100 &&
+             data.amount is number && data.amount >= 0 && data.amount <= 100000000 &&
+             data.photoCount is int && data.photoCount >= 0 && data.photoCount <= 20 &&
+             data.summaryNote is string && data.summaryNote.size() <= 400;
+    }
+
+    match /users/{userId}/sheets/{sheetId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(sheetId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(sheetId) &&
+                       incoming().keys().hasAll(['userId', 'name', 'category', 'syncPlugUrl', 'syncEnabled', 'columns', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'name', 'category', 'syncPlugUrl', 'syncEnabled', 'columns', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidSheet(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(sheetId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidSheet(incoming(), userId) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'syncPlugUrl', 'syncEnabled', 'columns', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(sheetId);
+
+      match /rows/{rowId} {
+        allow list: if isOwner(userId) && isValidId(sheetId);
+        allow get: if isOwner(userId) && isValidId(sheetId) && isValidId(rowId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(sheetId) &&
+                         isValidId(rowId) &&
+                         exists(/databases/$(database)/documents/users/$(userId)/sheets/$(sheetId)) &&
+                         incoming().keys().hasAll(['userId', 'sheetId', 'dateStr', 'vehicleNo', 'partyOrRoute', 'billNo', 'freightAmount', 'expenseAmount', 'status', 'notes', 'sourceLabel', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'sheetId', 'dateStr', 'vehicleNo', 'partyOrRoute', 'billNo', 'freightAmount', 'expenseAmount', 'status', 'notes', 'sourceLabel', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidSheetRow(incoming(), userId, sheetId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(sheetId) &&
+                         isValidId(rowId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().sheetId == existing().sheetId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidSheetRow(incoming(), userId, sheetId) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['dateStr', 'vehicleNo', 'partyOrRoute', 'billNo', 'freightAmount', 'expenseAmount', 'status', 'notes', 'sourceLabel', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(sheetId) && isValidId(rowId);
+      }
+    }
+
+    match /users/{userId}/vehicles/{vehicleId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(vehicleId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(vehicleId) &&
+                       incoming().keys().hasAll(['userId', 'plateNumber', 'vehicleClass', 'nickname', 'ownerName', 'rtoOffice', 'fuelType', 'chassisMasked', 'challanCount', 'challanAmount', 'challanDueDate', 'rtcPermitExpiry', 'insuranceProvider', 'insurancePremium', 'insuranceDueDate', 'alertsEnabled', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'plateNumber', 'vehicleClass', 'nickname', 'ownerName', 'rtoOffice', 'fuelType', 'chassisMasked', 'challanCount', 'challanAmount', 'challanDueDate', 'rtcPermitExpiry', 'insuranceProvider', 'insurancePremium', 'insuranceDueDate', 'alertsEnabled', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidVehicle(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(vehicleId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidVehicle(incoming(), userId) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['plateNumber', 'vehicleClass', 'nickname', 'ownerName', 'rtoOffice', 'fuelType', 'chassisMasked', 'challanCount', 'challanAmount', 'challanDueDate', 'rtcPermitExpiry', 'insuranceProvider', 'insurancePremium', 'insuranceDueDate', 'alertsEnabled', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(vehicleId);
+    }
+
+    match /users/{userId}/documents/{docId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(docId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(docId) &&
+                       incoming().keys().hasAll(['userId', 'title', 'docType', 'vehicleNo', 'partyName', 'amount', 'photoCount', 'summaryNote', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'title', 'docType', 'vehicleNo', 'partyName', 'amount', 'photoCount', 'summaryNote', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidDocument(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(docId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidDocument(incoming(), userId) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'docType', 'vehicleNo', 'partyName', 'amount', 'photoCount', 'summaryNote', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(docId);
+    }
+  }
+}

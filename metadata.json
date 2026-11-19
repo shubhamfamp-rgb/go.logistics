@@ -1,0 +1,6 @@
+{
+  "name": "go.logistics",
+  "description": "Transport fleet operations, live spreadsheet ledger, PDF & invoice tools, image optimizer, garage tracker, and compliance reminders.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
