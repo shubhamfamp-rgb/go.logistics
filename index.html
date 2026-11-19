@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>go.logistics — Calm Transport Operations &amp; Fleet Suite</title>
+  <meta name="description" content="Real-time transport ledgers, Excel .xlsx export, official PDF editing, photo-in-bill creation, 3D fleet models, and 3-day early challan & insurance alerts." />
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --surface-alt: #eceef2;
+      --ink: #1d1d1f;
+      --muted: #6e6e73;
+      --hairline: #e0e2e7;
+      --accent: #0071e3;
+      --accent-soft: #e5f1fd;
+      --green: #1f8a3d;
+      --amber: #b45309;
+      --red: #d70015;
+      --radius: 22px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0c;
+        --surface: #16161a;
+        --surface-alt: #222228;
+        --ink: #f5f5f7;
+        --muted: #a1a1aa;
+        --hairline: #2e2e36;
+        --accent: #2997ff;
+        --accent-soft: #102a45;
+        --green: #32d74b;
+        --amber: #ff9f0a;
+        --red: #ff453a;
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: saturate(180%) blur(20px);
+      background: color-mix(in srgb, var(--surface) 82%, transparent);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .nav-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .nav-links {
+      display: flex;
+      gap: 22px;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .nav-links a { color: var(--muted); font-weight: 500; }
+    .nav-links a:hover { color: var(--ink); text-decoration: none; }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 48px 24px 72px;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 28px 0 44px;
+    }
+    .pill {
+      display: inline-block;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      max-width: 660px;
+      margin: 0 auto 28px;
+      color: var(--muted);
+      font-size: 1.12rem;
+    }
+    .cta-row {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 22px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--hairline); }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      margin-top: 32px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+      margin-top: 28px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 {
+      font-size: 1.12rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .card p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .section-title {
+      margin-top: 56px;
+      margin-bottom: 10px;
+      font-size: 1.8rem;
+      letter-spacing: -0.02em;
+    }
+    .section-sub {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+      margin: 14px 0;
+      flex-wrap: wrap;
+    }
+    input, select {
+      background: var(--surface-alt);
+      border: 1px solid var(--hairline);
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .result-box {
+      background: var(--surface-alt);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-top: 12px;
+      font-size: 0.92rem;
+    }
+
+    .chip-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    .chip {
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--hairline);
+      background: var(--surface-alt);
+      color: var(--ink);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .chip.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    #vehicleCanvas {
+      width: 100%;
+      height: 240px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, var(--surface-alt), var(--surface));
+      cursor: grab;
+      display: block;
+    }
+    #vehicleCanvas:active { cursor: grabbing; }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+      padding: 36px 24px;
+      border-top: 1px solid var(--hairline);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-inner">
+      <div class="brand">go.logistics</div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#interactive">Interactive Preview</a>
+        <a href="#architecture">Setup</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="pill">Android · Kotlin · Jetpack Compose</span>
+      <h1>Calm precision for modern transport operations.</h1>
+      <p>
+        Manage live Excel freight ledgers, edit official PDF statements, embed proof photos inside bills,
+        tune document image quality, inspect 3D fleet models, and receive 3-day early challan &amp; insurance alerts.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#interactive">Try Live Web Tools</a>
+        <a class="btn btn-secondary" href="#architecture">Build &amp; GitHub Setup</a>
+      </div>
+    </section>
+
+    <section id="features">
+      <h2 class="section-title">Built for everyday roadlines &amp; fleet owners</h2>
+      <p class="section-sub">Clean Material 3 studio cards with automatic System, Light, and Dark appearance.</p>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Live Excel Sheets &amp; .xlsx Export</h3>
+          <p>Edit trip rows inline, view instant net margins on the mobile dashboard, import CSV files, scan paper bills directly into sheets, and export genuine <code>.xlsx</code> workbooks.</p>
+        </div>
+        <div class="card">
+          <h3>PDF Editor &amp; Photo-in-Bill</h3>
+          <p>Open agency statements or invoices, add text edits or whiteout blocks, attach dispatch proof photos inside bills, and export crisp multi-page PDFs.</p>
+        </div>
+        <div class="card">
+          <h3>Image Quality Optimizer</h3>
+          <p>Sharpen faded paper receipts and RC cards for readability, or compress JPEG quality and resolution with live KB/MB size savings before sharing.</p>
+        </div>
+        <div class="card">
+          <h3>Vehicle Info Web Lookup</h3>
+          <p>Enter any Indian plate like <span class="mono">MH12PQ4821</span> or <span class="mono">MHXXA0000</span> to decode state &amp; RTO office details, open official Parivahan Vahan / e-Challan portals, or import from RC photos.</p>
+        </div>
+        <div class="card">
+          <h3>3D Fleet Models</h3>
+          <p>Interactive touch-to-rotate 3D models built with perspective projection for <strong>LMV</strong>, <strong>Bike</strong>, <strong>Bus</strong>, <strong>Truck</strong>, and <strong>Long Vehicle</strong> trailers.</p>
+        </div>
+        <div class="card">
+          <h3>3-Day Early Compliance Alerts</h3>
+          <p>Watchlist notifications start 3 days ahead of pending challan deadlines, RTC/RTO permit expiries, and motor insurance renewals.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="interactive">
+      <h2 class="section-title">Interactive Studio Preview</h2>
+      <p class="section-sub">Explore the 3D fleet model viewer, Indian RTO plate decoder, and trip profit calculator right in your browser.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>3D Vehicle Studio (Drag to Rotate)</h3>
+          <div class="chip-bar" id="classChips">
+            <button class="chip active" data-cls="TRUCK">Truck</button>
+            <button class="chip" data-cls="LONG_VEHICLE">Long Vehicle</button>
+            <button class="chip" data-cls="BUS">Bus</button>
+            <button class="chip" data-cls="LMV">LMV</button>
+            <button class="chip" data-cls="BIKE">Bike</button>
+          </div>
+          <canvas id="vehicleCanvas"></canvas>
+        </div>
+
+        <div class="card">
+          <h3>RTO Plate Decoder &amp; Trip Margin</h3>
+          <div class="input-row">
+            <input id="plateInput" class="mono" type="text" value="MH12PQ4821" placeholder="e.g. MHXXA0000" style="flex:1; text-transform:uppercase;" />
+            <button class="btn btn-primary" onclick="decodePlate()">Lookup</button>
+          </div>
+          <div id="plateOutput" class="result-box"></div>
+
+          <div class="input-row" style="margin-top:18px;">
+            <input id="kmInput" type="number" value="420" placeholder="Distance km" style="width:110px;" />
+            <input id="freightInput" type="number" value="26500" placeholder="Freight INR" style="width:130px;" />
+            <input id="dieselInput" type="number" value="94.5" placeholder="Diesel/L" style="width:105px;" />
+            <button class="btn btn-secondary" onclick="calcMargin()">Calculate</button>
+          </div>
+          <div id="marginOutput" class="result-box"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="architecture">
+      <h2 class="section-title">Project Setup &amp; Build</h2>
+      <div class="card">
+        <h3>Repository Highlights</h3>
+        <p style="margin-bottom:10px;">
+          Built with Kotlin, Jetpack Compose, Material 3, Cloud Firestore (user-isolated rules), Jetpack Credential Manager Google Sign-In,
+          Firebase AI Logic, Android <code>PdfRenderer</code> / <code>PdfDocument</code>, and a pure-Kotlin OpenXML <code>.xlsx</code> generator.
+        </p>
+        <p class="mono" style="font-size:0.88rem; color:var(--ink);">
+          gradle :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    go.logistics · Built for dependable fleet accounting &amp; transport operations.
+  </footer>
+
+  <script>
+    const STATES = {
+      MH: "Maharashtra", DL: "Delhi NCT", KA: "Karnataka", GJ: "Gujarat",
+      RJ: "Rajasthan", TN: "Tamil Nadu", UP: "Uttar Pradesh", HR: "Haryana",
+      PB: "Punjab", WB: "West Bengal", TS: "Telangana", AP: "Andhra Pradesh",
+      MP: "Madhya Pradesh", KL: "Kerala", GA: "Goa"
+    };
+    const RTOS = {
+      MH01: "Mumbai Central (Tardeo)", MH02: "Mumbai West (Andheri)",
+      MH04: "Thane RTO", MH12: "Pune RTO", MH14: "Pimpri-Chinchwad RTO",
+      MH15: "Nashik RTO", MH31: "Nagpur Urban RTO", MH43: "Navi Mumbai (Vashi) RTO",
+      GJ01: "Ahmedabad RTO", GJ05: "Surat RTO", KA01: "Bengaluru Central",
+      DL01: "Delhi North", HR26: "Gurugram RTO", TN01: "Chennai Central"
+    };
+
+    function decodePlate() {
+      const raw = document.getElementById("plateInput").value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const st = STATES[raw.slice(0, 2)] || "Indian RTO Registry";
+      const rtoCode = raw.slice(0, 4);
+      const office = RTOS[rtoCode] || (st + " · " + rtoCode + " Zone");
+      document.getElementById("plateOutput").innerHTML =
+        "<strong>" + (raw || "N/A") + "</strong> · " + st + "<br/>Office: " + office;
+    }
+
+    function calcMargin() {
+      const km = parseFloat(document.getElementById("kmInput").value) || 0;
+      const freight = parseFloat(document.getElementById("freightInput").value) || 0;
+      const diesel = parseFloat(document.getElementById("dieselInput").value) || 0;
+      const fuelCost = (km / 4.2) * diesel;
+      const net = freight - fuelCost - 2800;
+      document.getElementById("marginOutput").innerHTML =
+        "Est. Fuel (4.2 km/L): <strong>₹" + Math.round(fuelCost) + "</strong> · Net after ₹2,800 toll/bata: <strong>₹" + Math.round(net) + "</strong>";
+    }
+
+    decodePlate();
+    calcMargin();
+
+    // Lightweight 3D vehicle preview matching the Android Compose renderer
+    const canvas = document.getElementById("vehicleCanvas");
+    const ctx = canvas.getContext("2d");
+    let currentCls = "TRUCK";
+    let yaw = -0.62, pitch = 0.30, dragging = false, lastX = 0, lastY = 0;
+
+    document.querySelectorAll("#classChips .chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("#classChips .chip").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentCls = btn.dataset.cls;
+        draw3D();
+      });
+    });
+
+    canvas.addEventListener("pointerdown", e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+    window.addEventListener("pointerup", () => dragging = false);
+    window.addEventListener("pointermove", e => {
+      if (!dragging) return;
+      yaw += (e.clientX - lastX) * 0.012;
+      pitch = Math.max(0.08, Math.min(0.9, pitch - (e.clientY - lastY) * 0.008));
+      lastX = e.clientX; lastY = e.clientY;
+      draw3D();
+    });
+
+    function buildBoxes(cls) {
+      const b = [];
+      if (cls === "LMV") {
+        b.push([-0.85, -0.35, -1.65, 0.85, 0.22, 1.65, "#e5e7eb"]);
+        b.push([-0.75, 0.22, -0.95, 0.75, 0.72, 0.65, "#f3f4f6"]);
+      } else if (cls === "BIKE") {
+        b.push([-0.18, -0.15, -1.05, 0.18, 0.22, 0.9, "#0071e3"]);
+        b.push([-0.34, 0.25, -1.18, 0.34, 0.78, -0.52, "#e5e7eb"]);
+      } else if (cls === "BUS") {
+        b.push([-0.92, -0.40, -2.55, 0.92, 1.05, 2.55, "#f3f4f6"]);
+        b.push([-0.94, -0.32, -2.56, 0.94, -0.05, 2.56, "#0071e3"]);
+      } else if (cls === "LONG_VEHICLE") {
+        b.push([-0.96, -0.16, -3.2, 0.96, 1.24, 1.15, "#f3f4f6"]);
+        b.push([-0.88, -0.18, 1.38, 0.88, 1.12, 2.95, "#0071e3"]);
+      } else {
+        b.push([-0.95, -0.18, -2.38, 0.95, 1.22, 0.85, "#f3f4f6"]);
+        b.push([-0.88, -0.18, 0.95, 0.88, 1.04, 2.25, "#0071e3"]);
+      }
+      return b;
+    }
+
+    function draw3D() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      const cx = rect.width / 2, cy = rect.height * 0.56;
+      const unit = Math.min(rect.width, rect.height) * 0.22;
+      const focal = 7.5;
+      const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+      const cosX = Math.cos(pitch), sinX = Math.sin(pitch);
+
+      function rot(v) {
+        const x1 = v[0] * cosY + v[2] * sinY;
+        const z1 = -v[0] * sinY + v[2] * cosY;
+        return [x1, v[1] * cosX - z1 * sinX, v[1] * sinX + z1 * cosX];
+      }
+
+      const faces = [];
+      for (const [x1, y1, z1, x2, y2, z2, color] of buildBoxes(currentCls)) {
+        const boxFaces = [
+          [[x1,y1,z2],[x2,y1,z2],[x2,y2,z2],[x1,y2,z2]],
+          [[x2,y1,z1],[x1,y1,z1],[x1,y2,z1],[x2,y2,z1]],
+          [[x1,y2,z2],[x2,y2,z2],[x2,y2,z1],[x1,y2,z1]],
+          [[x1,y1,z1],[x2,y1,z1],[x2,y1,z2],[x1,y1,z2]],
+          [[x2,y1,z2],[x2,y1,z1],[x2,y2,z1],[x2,y2,z2]],
+          [[x1,y1,z1],[x1,y1,z2],[x1,y2,z2],[x1,y2,z1]]
+        ];
+        for (const f of boxFaces) {
+          const rv = f.map(rot);
+          const avgZ = rv.reduce((a, p) => a + p[2], 0) / 4;
+          const pts = rv.map(p => {
+            const k = focal / Math.max(1.5, focal - p[2]);
+            return [cx + p[0] * unit * k, cy - p[1] * unit * k];
+          });
+          faces.push({ pts, avgZ, color });
+        }
+      }
+      faces.sort((a, b) => a.avgZ - b.avgZ);
+      for (const f of faces) {
+        ctx.beginPath();
+        ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+        for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i][0], f.pts[i][1]);
+        ctx.closePath();
+        ctx.fillStyle = f.color;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.16)";
+        ctx.stroke();
+      }
+    }
+    window.addEventListener("resize", draw3D);
+    draw3D();
+  </script>
+</body>
+</html>
